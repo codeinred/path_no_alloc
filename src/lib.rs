@@ -90,7 +90,7 @@ pub fn join_in_buff<'a, const N: usize>(
 macro_rules! with_paths {
     {
         $( $name:ident = $( $path:ident ) / + ),*
-        => $( $statements:stmt );*
+        => $( $statements:stmt );* $(;)?
     } => {
         $(
             let mut arr: [u8; 128] = [0; 128];
