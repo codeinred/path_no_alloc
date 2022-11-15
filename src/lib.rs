@@ -86,6 +86,67 @@ pub fn join_in_buff<'a, const N: usize>(
     path_buff.as_path()
 }
 
+/// Allows paths to be joined with small path optimization:
+/// if the total length of all joined paths is less tahn 128,
+/// no PathBuf will be allocated.
+///
+/// You can use arbitrary objects that are convertible to a Path
+/// via `.as_ref()`:
+///
+/// ```rust
+/// use path_no_alloc::with_paths;
+/// use std::path::Path;
+///
+/// /// Check that a file exists in the given path
+/// fn has_file<P: AsRef<Path>, Q: AsRef<Path>>(path: P, file: Q) -> bool {
+///     with_paths! {
+///         full_path = path / file => full_path.exists()
+///     }
+/// }
+/// ```
+///
+/// You can also join arbitrary numbers of paths together:
+///
+/// ```rust
+/// use std::path::Path;
+/// use path_no_alloc::with_paths;
+///
+/// let p1 = "path";
+/// let p2 = "to";
+/// let p3 = "thing";
+///
+/// with_paths! {
+///     path1 = p1 / p2 / p3,
+///     path2 = p3 / p2 / p1
+///     => println!("Path1 = {path1:?}, Path2 = {path2:?}")
+/// }
+/// ```
+///
+/// This will print:
+///
+/// ```output
+/// Path1 = "path/to/thing", Path2 = "thing/to/path"
+/// ```
+///
+/// Paths joined in the context of `with_paths!` act as though they've been joined
+/// via `Path.join`. In other words, joining paths A and B will just produce B
+/// in the case that B is absolute:
+///
+/// ```rust
+/// use path_no_alloc::with_paths;
+/// use std::path::Path;
+///
+/// let p1 = "some/path";
+/// let p2 = "/absolute/path";
+///
+/// with_paths! {
+///     path = p1 / p2
+///     =>
+///     println!("{path:?} should equal \"/absolute/path\"");
+///     assert_eq!(path, Path::new(p1).join(p2));
+///     assert_eq!(path, Path::new("/absolute/path"));
+/// }
+/// ```
 #[macro_export]
 macro_rules! with_paths {
     {
