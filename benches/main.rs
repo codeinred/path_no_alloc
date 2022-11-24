@@ -1,66 +1,43 @@
 use std::path::Path;
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId};
 use path_no_alloc::with_paths;
 
+pub fn array_from_idx<const N: usize, T>(f: impl FnMut(usize) -> T) -> [T; N] {
+    let mut indices = [0; N];
 
+    for i in 0..N {
+        indices[i] = i;
+    }
+
+    indices.map(f)
+}
 pub fn criterion_benchmark(c: &mut Criterion) {
-    c.bench_function("baseline make array", |b| b.iter(|| {
-        let mut arr: [u8; 128] = [0; 128].map(black_box);
-        black_box(&mut arr);
-    }));
+
+    let p1 = "Call me Ishmael. Some years ago - never mind how long precisely - having little or no money in my purse, and nothing particular to interest me on shore";
+    let p2 = "I thought I would sail about a little and see the watery part of the world. It is a way I have of driving off the spleen and regulating the circulation.";
+
+    let mut group = c.benchmark_group("Path join");
 
 
-    c.bench_function("path_no_alloc", |b| b.iter(|| {
-        let p1 = black_box("pathA");
-        let p2 = black_box("pathB");
+    for i in 1..128 {
+        group.bench_with_input(BenchmarkId::new("with_paths!", i), &i, |b, i| b.iter(|| {
+            let p1 = &p1[..*i];
+            let p2 = &p2[..*i];
 
-        with_paths! {
-            path = p1 / p2 => black_box(path)
-        };
-    }));
+            with_paths! {
+                path = p1 / p2 => black_box(path)
+            };
+        }));
 
-    c.bench_function("path_join", |b| b.iter(|| {
-        let p1 = black_box("pathA");
-        let p2 = black_box("pathB");
+        group.bench_with_input(BenchmarkId::new("Path.join", i), &i, |b, i| b.iter(|| {
+            let p1 = &p1[..*i];
+            let p2 = &p2[..*i];
 
-        let path = Path::new(p1).join(p2);
-        black_box(path.as_path());
-    }));
+            black_box(Path::new(p1).join(p2))
+        }));
 
-    c.bench_function("path_no_alloc longer", |b| b.iter(|| {
-        let p1 = black_box("some/longer/path/to/thing");
-        let p2 = black_box("another/long/path/to/thing");
-
-        with_paths! {
-            path = p1 / p2 => black_box(path)
-        };
-    }));
-
-    c.bench_function("path_join longer", |b| b.iter(|| {
-        let p1 = black_box("some/longer/path/to/thing");
-        let p2 = black_box("another/long/path/to/thing");
-
-        let path = Path::new(p1).join(p2);
-        black_box(path.as_path());
-    }));
-
-    c.bench_function("path_no_alloc longer x 2", |b| b.iter(|| {
-        let p1 = black_box("some/longer/path/to/thing/some/longer/path/to/thing");
-        let p2 = black_box("another/long/path/to/thing/another/long/path/to/thing");
-
-        with_paths! {
-            path = p1 / p2 => black_box(path)
-        };
-    }));
-
-    c.bench_function("path_join longer x 2", |b| b.iter(|| {
-        let p1 = black_box("some/longer/path/to/thing/some/longer/path/to/thing");
-        let p2 = black_box("another/long/path/to/thing/another/long/path/to/thing");
-
-        let path = Path::new(p1).join(p2);
-        black_box(path.as_path());
-    }));
+    }
 }
 
 criterion_group!(benches, criterion_benchmark);
