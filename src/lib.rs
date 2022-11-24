@@ -22,9 +22,7 @@ pub fn join_in_buff<'a, const N: usize>(
     // Find the start index of the first path that's not absulote, from the end
     // this will be the start of our join. If there's no absolute path, we start
     // with the first one
-    let start_idx = paths.iter().rposition(
-        |p| p.is_absolute()
-    ).unwrap_or(0);
+    let start_idx = paths.iter().rposition(|p| p.is_absolute()).unwrap_or(0);
 
     // Now we whittle down the space of paths we're joining to just the ones we
     // care about. Also, from here on out we're working with byte strings.
@@ -32,7 +30,19 @@ pub fn join_in_buff<'a, const N: usize>(
     let paths = &paths[start_idx..];
 
     // Compute the amount of space required to store all the paths
-    let total_len = paths.iter().map(|x| 1 + x.len()).sum();
+    let total_len = paths
+        .iter()
+        .map(|x| match x.len() {
+            0 => 0, // Zero length paths don't get a slash, so the added length is zero
+            n => 1 + n,
+        })
+        .sum();
+
+    // If the total length is zero, there's nothing to join, so we can return an empty
+    // path
+    if total_len == 0 {
+        return "".as_ref()
+    }
 
     // If they fit in the raw buffer, we'll join the paths in the raw buffer.
     // Otherwise, we'll put them into the pathbuf.
@@ -40,15 +50,20 @@ pub fn join_in_buff<'a, const N: usize>(
         let mut start = 0;
 
         for bytes in paths {
+            // Zero-length paths are ignored in a join operation
+            if bytes.len() == 0 {
+                continue;
+            }
             let end = start + bytes.len();
             raw_buff[start..end].copy_from_slice(bytes);
             raw_buff[end] = b'/';
             start = end + 1;
         }
         // Add a null terminator instead of a slash at the end
-        raw_buff[start - 1] = b'\0';
+        let end_idx = start - 1;
+        raw_buff[end_idx] = b'\0';
 
-        OsStr::from_bytes(&raw_buff[..(start - 1)]).as_ref()
+        OsStr::from_bytes(&raw_buff[..end_idx]).as_ref()
     } else {
         path_buff.clear();
         path_buff.reserve(total_len);
