@@ -24,8 +24,6 @@ pub fn join_in_buff<'a, const N: usize>(
     // this will be the start of our join. If there's no absolute path, we start
     // with the first one
 
-    use std::iter::zip;
-
     let mut byte_paths: [MaybeUninit<&[u8]>; N] =
         unsafe { std::mem::MaybeUninit::uninit().assume_init() };
 
@@ -33,14 +31,14 @@ pub fn join_in_buff<'a, const N: usize>(
     let paths: &[&[u8]] = {
         let mut start_idx = N;
         for i in (0..N).rev() {
-            let bytes = paths[i].as_os_str().as_bytes();
-            if bytes.len() == 0 {
+            let path = paths[i].as_os_str().as_bytes();
+            if path.is_empty() {
                 continue;
             }
-            total_len += bytes.len() + 1;
+            total_len += path.len() + 1;
             start_idx -= 1;
-            byte_paths[start_idx].write(bytes);
-            if bytes[0] == b'/' {
+            byte_paths[start_idx].write(path);
+            if path[0] == b'/' {
                 break;
             }
         }
@@ -48,25 +46,25 @@ pub fn join_in_buff<'a, const N: usize>(
     };
     // If the total length is zero, there's nothing to join, so we can return an empty
     // path
-    if total_len == 0 {
+    if paths.is_empty() {
         return "".as_ref();
     }
 
     // If they fit in the raw buffer, we'll join the paths in the raw buffer.
     // Otherwise, we'll put them into the pathbuf.
     if total_len <= raw_buff.len() {
-        let mut start = 0;
+        let mut pos = 0;
 
-        for bytes in paths.iter().cloned() {
-            let end = start + bytes.len();
-            for (i, b) in zip(start..end, bytes.iter().cloned()) {
-                raw_buff[i].write(b);
+        for path in paths {
+            let len = path.len();
+            for i in 0..len {
+                raw_buff[pos + i].write(path[i]);
             }
-            raw_buff[end].write(b'/');
-            start = end + 1;
+            raw_buff[pos + len].write(b'/');
+            pos += len + 1;
         }
         // Add a null terminator instead of a slash at the end
-        let end_idx = start - 1;
+        let end_idx = pos - 1;
         raw_buff[end_idx].write(b'\0');
 
         let result = unsafe { std::mem::transmute(&raw_buff[..end_idx]) };
