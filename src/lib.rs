@@ -57,8 +57,8 @@ pub fn join_in_buff<'a, const N: usize>(
 
         for path in paths {
             let len = path.len();
-            for i in 0..len {
-                raw_buff[pos + i].write(path[i]);
+            unsafe {
+                core::ptr::copy_nonoverlapping(&path[0], raw_buff[pos].as_mut_ptr(), len);
             }
             raw_buff[pos + len].write(b'/');
             pos += len + 1;
