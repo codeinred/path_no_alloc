@@ -2,6 +2,7 @@
 mod tests;
 
 use std::{
+    mem::MaybeUninit,
     ffi::OsStr,
     path::{Path, PathBuf},
 };
@@ -15,13 +16,15 @@ use std::os::unix::ffi::OsStrExt;
 /// Returns a Path referencing whichever one was used.
 #[cfg(target_family = "unix")]
 pub fn join_in_buff<'a, const N: usize>(
-    raw_buff: &'a mut [u8],
-    path_buff: &'a mut PathBuf,
+    raw_buff: &'a mut [MaybeUninit<u8>],
+    path_buff: &'a mut Option<PathBuf>,
     paths: [&Path; N],
 ) -> &'a Path {
     // Find the start index of the first path that's not absulote, from the end
     // this will be the start of our join. If there's no absolute path, we start
     // with the first one
+
+    use std::iter::zip;
     let start_idx = paths.iter().rposition(|p| p.is_absolute()).unwrap_or(0);
 
     // Now we whittle down the space of paths we're joining to just the ones we
@@ -49,22 +52,30 @@ pub fn join_in_buff<'a, const N: usize>(
     if total_len <= raw_buff.len() {
         let mut start = 0;
 
-        for bytes in paths {
+        for bytes in paths.iter().cloned() {
             // Zero-length paths are ignored in a join operation
             if bytes.len() == 0 {
                 continue;
             }
             let end = start + bytes.len();
-            raw_buff[start..end].copy_from_slice(bytes);
-            raw_buff[end] = b'/';
+            for (i, b) in zip(start..end, bytes.iter().cloned()) {
+                raw_buff[i].write(b);
+            }
+            raw_buff[end].write( b'/');
             start = end + 1;
         }
         // Add a null terminator instead of a slash at the end
         let end_idx = start - 1;
-        raw_buff[end_idx] = b'\0';
+        raw_buff[end_idx].write(b'\0');
 
-        OsStr::from_bytes(&raw_buff[..end_idx]).as_ref()
+        let result = unsafe { std::mem::transmute(&raw_buff[..end_idx]) };
+        OsStr::from_bytes(result).as_ref()
     } else {
+        let path_buff = if let Some(path) = path_buff {
+            path
+        } else {
+            path_buff.insert(PathBuf::new())
+        };
         path_buff.clear();
         path_buff.reserve(total_len);
 
@@ -79,7 +90,7 @@ pub fn join_in_buff<'a, const N: usize>(
 #[cfg(not(target_family = "unix"))]
 pub fn join_in_buff<'a, const N: usize>(
     raw_buff: &'a mut [u8],
-    path_buff: &'a mut PathBuf,
+    path_buff: &'a mut Option<PathBuf>,
     paths: [&Path; N],
 ) -> &'a Path {
     // I want to keep the function signature the same between windows and not-windows
@@ -90,6 +101,12 @@ pub fn join_in_buff<'a, const N: usize>(
 
     let total_len: usize = paths.iter().map(|x| x.len()).sum();
     let total_len = total_len + N + 1;
+
+    let path_buff = if let Some(path) = path_buff {
+        path
+    } else {
+        path_buff.insert(PathBuf::new())
+    };
 
     path_buff.clear();
     path_buff.reserve(total_len);
@@ -169,8 +186,8 @@ macro_rules! with_paths {
         => $( $statements:stmt );* $(;)?
     } => {
         $(
-            let mut arr: [u8; 128] = [0; 128];
-            let mut buff = ::std::path::PathBuf::new();
+            let mut arr: [std::mem::MaybeUninit<u8>; 128] = unsafe { std::mem::MaybeUninit::uninit().assume_init() };
+            let mut buff = None;
             let $name = $crate::join_in_buff(&mut arr, &mut buff, [$($path.as_ref()),+]);
         )*
 
