@@ -2,8 +2,8 @@
 mod tests;
 
 use std::{
-    mem::MaybeUninit,
     ffi::OsStr,
+    mem::MaybeUninit,
     path::{Path, PathBuf},
 };
 
@@ -25,26 +25,31 @@ pub fn join_in_buff<'a, const N: usize>(
     // with the first one
 
     use std::iter::zip;
-    let start_idx = paths.iter().rposition(|p| p.is_absolute()).unwrap_or(0);
 
-    // Now we whittle down the space of paths we're joining to just the ones we
-    // care about. Also, from here on out we're working with byte strings.
-    let paths = paths.map(|p| p.as_os_str().as_bytes());
-    let paths = &paths[start_idx..];
+    let mut byte_paths: [MaybeUninit<&[u8]>; N] =
+        unsafe { std::mem::MaybeUninit::uninit().assume_init() };
 
-    // Compute the amount of space required to store all the paths
-    let total_len = paths
-        .iter()
-        .map(|x| match x.len() {
-            0 => 0, // Zero length paths don't get a slash, so the added length is zero
-            n => 1 + n,
-        })
-        .sum();
-
+    let mut total_len = 0;
+    let paths: &[&[u8]] = {
+        let mut start_idx = N;
+        for i in (0..N).rev() {
+            let bytes = paths[i].as_os_str().as_bytes();
+            if bytes.len() == 0 {
+                continue;
+            }
+            total_len += bytes.len() + 1;
+            start_idx -= 1;
+            byte_paths[start_idx].write(bytes);
+            if bytes[0] == b'/' {
+                break;
+            }
+        }
+        unsafe { core::mem::transmute(&byte_paths[start_idx..]) }
+    };
     // If the total length is zero, there's nothing to join, so we can return an empty
     // path
     if total_len == 0 {
-        return "".as_ref()
+        return "".as_ref();
     }
 
     // If they fit in the raw buffer, we'll join the paths in the raw buffer.
@@ -53,15 +58,11 @@ pub fn join_in_buff<'a, const N: usize>(
         let mut start = 0;
 
         for bytes in paths.iter().cloned() {
-            // Zero-length paths are ignored in a join operation
-            if bytes.len() == 0 {
-                continue;
-            }
             let end = start + bytes.len();
             for (i, b) in zip(start..end, bytes.iter().cloned()) {
                 raw_buff[i].write(b);
             }
-            raw_buff[end].write( b'/');
+            raw_buff[end].write(b'/');
             start = end + 1;
         }
         // Add a null terminator instead of a slash at the end
