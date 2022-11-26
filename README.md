@@ -83,7 +83,44 @@ with_paths! {
 }
 ```
 
-## Have you tested edge cases?
+## Minutae
+
+### Performance
+
+When tested on a set of 131072 random paths, using the `with_paths!` macro is
+2-3.5 times faster than calling `Path.join()`, and this is under ideal
+conditions `Path.join`. Allocation is fundamentally non-deterministic; it's
+subject to contention from multiple threads; and it must be avoided altogether
+in the context of certain latency-specific applications.
+
+Using `with_paths!` will avoid allocation in a majority of cases under
+real-world conditions (I assume dealing with paths greater than 128 characters
+isn't common).
+
+Even when it's necessary to do a system call (such as checking for the existence
+of a file), using `with_paths!` can still result in a performance improvement of
+20-30%.
+
+(If these images are not displayed in the crate documentation, please view them
+at
+[github.com/codeinred/path_no_alloc][https://github.com/codeinred/path_no_alloc])
+
+![](docs/benchmarks/join/report/lines.svg)
+
+Shown above is a comparison for the time it takes to join two randomly selected
+paths using `Path.join`, versus the time taken to join two paths with
+`with_paths!`. The X axis represents the _average_ total length of two randomly
+selected paths. Starting with an _average_ path length of 64, there is a
+non-zero probability of the two randomly chosen paths having a combined length
+greater than 128, resulting in an allocation occuring.
+
+![](docs/benchmarks/join/report/violin.svg)
+
+Shown above is a violin plot of the same data as in the line graph. The final
+number in the benchmark ID corresponds to average total length of two randomly
+selected paths.
+
+### Have you tested edge cases?
 
 Yes. All of the following edge cases are tested:
 
@@ -97,7 +134,7 @@ of the paths potentially exceeding the size of the stack buffer.
 
 See [tests.rs](src/tests.rs#L86)
 
-## What happens if the paths don't fit in the stack buffer?
+### What happens if the paths don't fit in the stack buffer?
 
 If the paths don't fit in the stack buffer, then `with_paths!` will compute the
 combined length of all paths; reserve a `PathBuf` with the appropriate size; and
