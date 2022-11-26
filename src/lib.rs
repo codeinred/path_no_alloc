@@ -122,6 +122,18 @@ pub fn join_in_buff<'a, const N: usize>(
 #[doc = include_str!("../docs/with_paths.md")]
 #[macro_export]
 macro_rules! with_paths {
+    // Declaration mode
+    {
+        $( $name:ident = $( $path:ident ) / + ),*
+    } => {
+        $(
+            let mut __with_paths_arr: [std::mem::MaybeUninit<u8>; 128] = unsafe { std::mem::MaybeUninit::uninit().assume_init() };
+            let mut __with_paths_buff = None;
+            let $name = $crate::join_in_buff(&mut __with_paths_arr, &mut __with_paths_buff, [$($path.as_ref()),+]);
+        )*
+    };
+
+    // Expression mode
     {
         $( $name:ident = $( $path:ident ) / + ),*
         => $( $statements:stmt );* $(;)?
@@ -135,15 +147,5 @@ macro_rules! with_paths {
 
             $( $statements )*
         }
-    };
-
-    {
-        $( $name:ident = $( $path:ident ) / + ),*
-    } => {
-        $(
-            let mut __with_paths_arr: [std::mem::MaybeUninit<u8>; 128] = unsafe { std::mem::MaybeUninit::uninit().assume_init() };
-            let mut __with_paths_buff = None;
-            let $name = $crate::join_in_buff(&mut __with_paths_arr, &mut __with_paths_buff, [$($path.as_ref()),+]);
-        )*
     };
 }
