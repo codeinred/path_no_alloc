@@ -186,12 +186,14 @@ macro_rules! with_paths {
         $( $name:ident = $( $path:ident ) / + ),*
         => $( $statements:stmt );* $(;)?
     } => {
-        $(
-            let mut arr: [std::mem::MaybeUninit<u8>; 128] = unsafe { std::mem::MaybeUninit::uninit().assume_init() };
-            let mut buff = None;
-            let $name = $crate::join_in_buff(&mut arr, &mut buff, [$($path.as_ref()),+]);
-        )*
+        {
+            $(
+                let mut __with_paths_arr: [std::mem::MaybeUninit<u8>; 128] = unsafe { std::mem::MaybeUninit::uninit().assume_init() };
+                let mut __with_paths_buff = None;
+                let $name = $crate::join_in_buff(&mut __with_paths_arr, &mut __with_paths_buff, [$($path.as_ref()),+]);
+            )*
 
-        $( $statements )*
+            $( $statements )*
+        }
     }
 }
