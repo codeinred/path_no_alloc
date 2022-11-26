@@ -152,3 +152,35 @@ Unfortunately, `Path.join` does not allocate enough space upfront, resulting in
 the second allocation.
 
 I hope to submit a bug fix to the standard library regarding this issue.
+
+## Why I wrote `path_no_alloc`
+
+Unfortunately unless your app is doing a _lot_ of path manipulations, using
+`with_paths!` won't result in meaningful performance improvements on a global
+level. Typically, the time taken to join two paths is dwarfed by the operations
+done with the resulting path - file creation, IO, reading/writing, or other
+interactions with the OS / filesystem.
+
+I wrote this library mainly for my own curiosity, and because I found the
+resulting interface to be nicer than calling `Path.join` everywhwere. It was my
+first foray into uninitilaized memory and stack-allocated buffers in Rust, and I
+can honestly say I learned a lot.
+
+Writing path operations that avoided allocation was a challenge, and one that I
+found interesting.
+
+In languages like C++, stack-allocated buffers can be a headache, especially
+since most of the time programmers _simply assume that the buffer is
+sufficient_ - if the stack buffer is overrun, too bad! Rust's hygenic macros
+enable the safe, performant use of stack-allocated buffers, with proper fallback
+to heap-allocated memory if the buffer is overrun, **and** they allow you to do
+it in a way that's actually _transparent to the programmer_. I incur no
+additional mental overhead from using `with_paths!`, because the syntax is
+cleaner and more straight-forward than `Path.join`!
+
+With that said, I hope you might find this library useful, or at least
+educational.
+
+With love,
+
+— Alecto
