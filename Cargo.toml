@@ -1,16 +1,22 @@
 [package]
-name = "path_no_alloc"
-version = "0.1.0"
+authors = ["Alecto Irene Perez <perez.cs@pm.me>"]
+description = "Provides with_paths! macro, for joining paths ergonomically and without allocation."
 edition = "2021"
+homepage = "https://github.com/codeinred/path_no_alloc"
+keywords = ["path", "paths", "filesystem", "fs"]
+license = "MIT"
+name = "path_no_alloc"
+readme = "README.md"
+version = "0.1.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 
 [dev-dependencies]
-criterion = { version = "0.3", features = ["html_reports"] }
+criterion = {version = "0.3", features = ["html_reports"]}
 rand = "0.8.4"
 
 [[bench]]
-name = "main"
 harness = false
+name = "main"
