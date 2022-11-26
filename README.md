@@ -6,10 +6,11 @@ wanted something faster and more ergonomic. Surely there was a better way,
 right?
 
 Enter `path_no_alloc`. It's a simple library for joining and using paths while
-avoiding allocation entirely for small paths (paths less than 128 characters).
+avoiding allocation entirely for small paths (paths less than 128 bytes).
 
-Usage is very simple. Given two paths, you can join them and use them in the
-context of a `with_paths!` block:
+Usage is very simple. Inside `with_paths!`, paths are joined with the `/`
+operator, if the total length of the paths are less than 128 bytes, the
+operation will occur inside a stack-allocated buffer.
 
 ```rust
 use path_no_alloc::with_paths;
@@ -17,18 +18,32 @@ use path_no_alloc::with_paths;
 let p1 = "hello";
 let p2 = "world";
 
+// Here, we create a variable `path` of type `&Path` that
+// represents p1 joined to p2
 with_paths! {
-    // Here, we create a variable `path` of type `&Path` that
-    // represents p1 joined to p2
-    path = p1 / p2 =>
+    path = p1 / p2
+};
 
-    assert_eq!(path, std::path::Path::new("hello/world"))
-}
+assert_eq!(path, std::path::Path::new("hello/world"));
+```
+
+`with_paths!` can also be used as a compound expression by appending statements
+after the declaration using the `=>` operator:
+
+```rust
+use path_no_alloc::with_paths;
+
+let p1 = "some/dir";
+let p2 = "file.txt";
+
+let file_exists: bool = with_paths! {
+    path = p1 / p2 => path.exists()
+};
 ```
 
 You can have an unlimited number of statements inside a `with_paths!` block, and
-you can also create and join as many paths as you want. Additionally, a path may
-be anything that implements `AsRef<Path>`:
+you can also create and join as many paths as you want. Anything that implements
+`AsRef<Path>` can be used in a declaration and joined to other paths.
 
 ```rust
 use path_no_alloc::with_paths;
@@ -39,20 +54,20 @@ let p2 = "world".to_string();
 let my_file = "file.txt";
 let some_root = PathBuf::from("some/project/root");
 
-with_paths! {
-    // Here, we create a variable `path` of type `&Path` that
-    // represents p1 joined to p2
+let path_exists = with_paths! {
     path = p1 / p2,
     another_path = some_root / p1 / my_file,
     some_third_path = p1 / p2 / some_root / my_file
+
     =>
 
     assert_eq!(path, std::path::Path::new("hello/world"));
     assert_eq!(another_path, std::path::Path::new("some/project/root/hello/file.txt"));
-
     let path_exists = some_third_path.exists();
     println!("{some_third_path:?} exists? {path_exists}");
-}
+
+    path_exists
+};
 ```
 
 Finally, paths joined in a `with_paths!` block behave identically to paths
@@ -70,17 +85,16 @@ let abs_path = "/path/to/file.txt";
 with_paths! {
     relative = working_dir / rel_path,
     absolute = working_dir / abs_path
-    =>
+};
 
-    // Joining a relative path appends it
-    assert_eq!(relative, Path::new("my/working/dir/path/to/file.txt"));
-    // But joining an absolute path just results in the absolute path
-    assert_eq!(absolute, Path::new("/path/to/file.txt"));
+// Joining a relative path appends it
+assert_eq!(relative, Path::new("my/working/dir/path/to/file.txt"));
+// But joining an absolute path just results in the absolute path
+assert_eq!(absolute, Path::new("/path/to/file.txt"));
 
-    // this is the same as the behavior of Path.join():
-    assert_eq!(relative, Path::new(working_dir).join(rel_path));
-    assert_eq!(absolute, Path::new(working_dir).join(abs_path));
-}
+// this is the same as the behavior of Path.join():
+assert_eq!(relative, Path::new(working_dir).join(rel_path));
+assert_eq!(absolute, Path::new(working_dir).join(abs_path));
 ```
 
 ## Minutae

@@ -149,7 +149,7 @@ with_paths! {
     my_path = p1 / p2
 }
 
-println!("{my_path:?} should equal \"/absolute/path\"");
+println!("{my_path:?} should equal '/absolute/path'");
 assert_eq!(my_path, Path::new(p1).join(p2));
 assert_eq!(my_path, Path::new("/absolute/path"));
 ```
