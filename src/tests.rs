@@ -126,16 +126,24 @@ fn test_fuzz() {
         result.push(p2);
 
         with_paths! {
-            path =p0/p1/p2 => assert_eq!(path, result)
+            path = p0 / p1 / p2 => assert_eq!(path, result)
         }
+        with_paths! {
+            path = p0 / p1 / p2
+        };
+        assert_eq!(path, result);
 
         result.push(p3);
         result.push(p4);
         result.push(p5);
 
         with_paths! {
-            path =p0/p1/p2/p3/p4/p5 => assert_eq!(path, result)
+            path = p0 / p1 / p2 / p3 / p4 / p5 => assert_eq!(path, result)
         }
+        with_paths! {
+            path = p0 / p1 / p2 / p3 / p4 / p5
+        };
+        assert_eq!(path, result);
 
         result.push(p6);
         result.push(p7);
@@ -147,15 +155,28 @@ fn test_fuzz() {
             n127 += 1;
         }
         with_paths! {
-            path =p0/p1/p2/p3/p4/p5/p6/p7/p8/p9 => assert_eq!(path, result)
-        }
+            path = p0 / p1 / p2 / p3 / p4 / p5 / p6 / p7 / p8 / p9 => assert_eq!(path, result)
+        };
+        with_paths! {
+            path = p0 / p1 / p2 / p3 / p4 / p5 / p6 / p7 / p8 / p9
+        };
+        assert_eq!(path, result);
     }
     let p = n127 as f64 / SAMPLES as f64;
     println!("Portion >= 127: {p}")
 }
 
+fn check_paths<P1, P2, P3>(p1: P1, p2: P2, p3: P3)
+where
+    P1: AsRef<Path> + Clone,
+    P2: AsRef<Path> + Clone,
+    P3: AsRef<Path> + Clone,
+{
+    check_paths_expr(p1.clone(), p2.clone(), p3.clone());
+    check_paths_declare(p1, p2, p3);
+}
 /// CHeck that every combination of 3 paths produces the expected result
-fn check_paths(p1: impl AsRef<Path>, p2: impl AsRef<Path>, p3: impl AsRef<Path>) {
+fn check_paths_expr(p1: impl AsRef<Path>, p2: impl AsRef<Path>, p3: impl AsRef<Path>) {
     with_paths! {
         path = p1 => assert_eq!(path, p1.as_ref())
     }
@@ -273,4 +294,125 @@ fn check_paths(p1: impl AsRef<Path>, p2: impl AsRef<Path>, p3: impl AsRef<Path>)
     with_paths! {
         path = p3 / p3 / p3 => assert_eq!(path, p3.as_ref().join(p3.as_ref()).join(p3.as_ref()))
     }
+}
+
+/// CHeck that every combination of 3 paths produces the expected result
+fn check_paths_declare(p1: impl AsRef<Path>, p2: impl AsRef<Path>, p3: impl AsRef<Path>) {
+    with_paths! { path = p1 };
+    assert_eq!(path, p1.as_ref());
+
+    with_paths! { path = p2 };
+    assert_eq!(path, p2.as_ref());
+
+    with_paths! { path = p3 };
+    assert_eq!(path, p3.as_ref());
+
+    with_paths! { path = p1 / p1 };
+    assert_eq!(path, p1.as_ref().join(p1.as_ref()));
+
+    with_paths! { path = p1 / p2 };
+    assert_eq!(path, p1.as_ref().join(p2.as_ref()));
+
+    with_paths! { path = p1 / p3 };
+    assert_eq!(path, p1.as_ref().join(p3.as_ref()));
+
+    with_paths! { path = p2 / p1 };
+    assert_eq!(path, p2.as_ref().join(p1.as_ref()));
+
+    with_paths! { path = p2 / p2 };
+    assert_eq!(path, p2.as_ref().join(p2.as_ref()));
+
+    with_paths! { path = p2 / p3 };
+    assert_eq!(path, p2.as_ref().join(p3.as_ref()));
+
+    with_paths! { path = p3 / p1 };
+    assert_eq!(path, p3.as_ref().join(p1.as_ref()));
+
+    with_paths! { path = p3 / p2 };
+    assert_eq!(path, p3.as_ref().join(p2.as_ref()));
+
+    with_paths! { path = p3 / p3 };
+    assert_eq!(path, p3.as_ref().join(p3.as_ref()));
+
+    with_paths! { path = p1 / p1 / p1 };
+    assert_eq!(path, p1.as_ref().join(p1.as_ref()).join(p1.as_ref()));
+
+    with_paths! { path = p1 / p1 / p2 };
+    assert_eq!(path, p1.as_ref().join(p1.as_ref()).join(p2.as_ref()));
+
+    with_paths! { path = p1 / p1 / p3 };
+    assert_eq!(path, p1.as_ref().join(p1.as_ref()).join(p3.as_ref()));
+
+    with_paths! { path = p1 / p2 / p1 };
+    assert_eq!(path, p1.as_ref().join(p2.as_ref()).join(p1.as_ref()));
+
+    with_paths! { path = p1 / p2 / p2 };
+    assert_eq!(path, p1.as_ref().join(p2.as_ref()).join(p2.as_ref()));
+
+    with_paths! { path = p1 / p2 / p3 };
+    assert_eq!(path, p1.as_ref().join(p2.as_ref()).join(p3.as_ref()));
+
+    with_paths! { path = p1 / p3 / p1 };
+    assert_eq!(path, p1.as_ref().join(p3.as_ref()).join(p1.as_ref()));
+
+    with_paths! { path = p1 / p3 / p2 };
+    assert_eq!(path, p1.as_ref().join(p3.as_ref()).join(p2.as_ref()));
+
+    with_paths! { path = p1 / p3 / p3 };
+    assert_eq!(path, p1.as_ref().join(p3.as_ref()).join(p3.as_ref()));
+
+    with_paths! { path = p2 / p1 / p1 };
+    assert_eq!(path, p2.as_ref().join(p1.as_ref()).join(p1.as_ref()));
+
+    with_paths! { path = p2 / p1 / p2 };
+    assert_eq!(path, p2.as_ref().join(p1.as_ref()).join(p2.as_ref()));
+
+    with_paths! { path = p2 / p1 / p3 };
+    assert_eq!(path, p2.as_ref().join(p1.as_ref()).join(p3.as_ref()));
+
+    with_paths! { path = p2 / p2 / p1 };
+    assert_eq!(path, p2.as_ref().join(p2.as_ref()).join(p1.as_ref()));
+
+    with_paths! { path = p2 / p2 / p2 };
+    assert_eq!(path, p2.as_ref().join(p2.as_ref()).join(p2.as_ref()));
+
+    with_paths! { path = p2 / p2 / p3 };
+    assert_eq!(path, p2.as_ref().join(p2.as_ref()).join(p3.as_ref()));
+
+    with_paths! { path = p2 / p3 / p1 };
+    assert_eq!(path, p2.as_ref().join(p3.as_ref()).join(p1.as_ref()));
+
+    with_paths! { path = p2 / p3 / p2 };
+    assert_eq!(path, p2.as_ref().join(p3.as_ref()).join(p2.as_ref()));
+
+    with_paths! { path = p2 / p3 / p3 };
+    assert_eq!(path, p2.as_ref().join(p3.as_ref()).join(p3.as_ref()));
+
+    with_paths! { path = p3 / p1 / p1 };
+    assert_eq!(path, p3.as_ref().join(p1.as_ref()).join(p1.as_ref()));
+
+    with_paths! { path = p3 / p1 / p2 };
+    assert_eq!(path, p3.as_ref().join(p1.as_ref()).join(p2.as_ref()));
+
+    with_paths! { path = p3 / p1 / p3 };
+    assert_eq!(path, p3.as_ref().join(p1.as_ref()).join(p3.as_ref()));
+
+    with_paths! { path = p3 / p2 / p1 };
+    assert_eq!(path, p3.as_ref().join(p2.as_ref()).join(p1.as_ref()));
+
+    with_paths! { path = p3 / p2 / p2 };
+    assert_eq!(path, p3.as_ref().join(p2.as_ref()).join(p2.as_ref()));
+
+    with_paths! { path = p3 / p2 / p3 };
+    assert_eq!(path, p3.as_ref().join(p2.as_ref()).join(p3.as_ref()));
+
+    with_paths! { path = p3 / p3 / p1 };
+    assert_eq!(path, p3.as_ref().join(p3.as_ref()).join(p1.as_ref()));
+
+    with_paths! { path = p3 / p3 / p2 };
+    assert_eq!(path, p3.as_ref().join(p3.as_ref()).join(p2.as_ref()));
+
+    with_paths! { path = p3 / p3 / p3 };
+    assert_eq!(path, p3.as_ref().join(p3.as_ref()).join(p3.as_ref()));
+
 }
