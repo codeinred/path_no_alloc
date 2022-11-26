@@ -103,7 +103,7 @@ of a file), using `with_paths!` can still result in a performance improvement of
 
 (If these images are not displayed in the crate documentation, please view them
 at
-[github.com/codeinred/path_no_alloc][https://github.com/codeinred/path_no_alloc])
+[github.com/codeinred/path_no_alloc](https://github.com/codeinred/path_no_alloc)
 
 ![](docs/benchmarks/join/report/lines.svg)
 
