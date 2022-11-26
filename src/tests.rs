@@ -1,9 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use rand::{
-    distributions::{Uniform},
-    prelude::Distribution,
-};
+use rand::{distributions::Uniform, prelude::Distribution};
 
 use crate::with_paths;
 
