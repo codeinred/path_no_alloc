@@ -12,7 +12,7 @@ use std::{
 #[cfg(target_family = "unix")]
 use std::os::unix::ffi::OsStrExt;
 
-/// Joins two paths. If the paths fit inside the given buffer,
+/// Joins N paths. If the paths fit inside the given buffer,
 /// uses the buffer. Otherwise, uses the given pathbuff.
 ///
 /// Returns a Path referencing whichever one was used.

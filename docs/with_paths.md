@@ -1,5 +1,5 @@
 `with_paths!` allows paths to be joined with small path optimization: if the
-total length of all joined paths is less tahn 128, no PathBuf will be allocated.
+total length of all joined paths is less then 128, no PathBuf will be allocated.
 
 There are two ways to use it:
 

@@ -7,7 +7,7 @@ keywords = ["path", "paths", "filesystem", "fs"]
 license = "MIT"
 name = "path_no_alloc"
 readme = "README.md"
-version = "0.1.1-beta"
+version = "0.1.1"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
