@@ -123,6 +123,63 @@ pub fn join_in_buff<'a, const N: usize>(
 /// if the total length of all joined paths is less tahn 128,
 /// no PathBuf will be allocated.
 ///
+/// ## Syntax
+///
+/// There are two modes of use for `with_paths!` - expression mode,
+/// and declaration mode.
+///
+/// ### Expression mode
+///
+/// Declarations followed by statements. Here, `with_paths!`
+/// encapsulates a block. Paths defined by this mode are not usable
+/// outside the block.
+///
+/// ```rust,ignore
+/// let my_path_computation = with_paths! { <declarations> => <statements> };
+/// ```
+///
+/// **Checking Existence with Expression Mode:**
+/// ```rust
+/// use path_no_alloc::with_paths;
+///
+/// let p1 = "some_dir";
+/// let p2 = "file.txt";
+/// let exists: bool = with_paths! {
+///     path = p1 / p2 => path.exists()
+/// };
+/// ```
+///
+/// ### Declaration mode
+///
+/// Declares paths usable in outer scope. Here, `with_paths!`
+/// simply expands to a set of statements, and any path variables it declares are
+/// usable outside the macro:
+///
+/// ```rust,ignore
+/// with_paths! {
+///     <declarations>
+/// };
+///
+/// <statements>
+/// ```
+///
+/// **Checking Existence with Declaration Mode:**
+///
+/// ```rust
+/// use path_no_alloc::with_paths;
+///
+/// let p1 = "some_dir";
+/// let p2 = "file.txt";
+/// with_paths! {
+///     path = p1 / p2
+/// };
+///
+/// // path can be used after it's declared. It's just a variable.
+/// let exists = path.exists();
+/// ```
+///
+/// ## Constraints
+///
 /// You can use arbitrary objects that are convertible to a Path
 /// via `.as_ref()`:
 ///
@@ -195,5 +252,15 @@ macro_rules! with_paths {
 
             $( $statements )*
         }
-    }
+    };
+
+    {
+        $( $name:ident = $( $path:ident ) / + ),*
+    } => {
+        $(
+            let mut __with_paths_arr: [std::mem::MaybeUninit<u8>; 128] = unsafe { std::mem::MaybeUninit::uninit().assume_init() };
+            let mut __with_paths_buff = None;
+            let $name = $crate::join_in_buff(&mut __with_paths_arr, &mut __with_paths_buff, [$($path.as_ref()),+]);
+        )*
+    };
 }
