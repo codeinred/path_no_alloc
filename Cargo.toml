@@ -1,13 +1,14 @@
 [package]
 authors = ["Alecto Irene Perez <perez.cs@pm.me>"]
 description = "Provides with_paths! macro, for joining paths ergonomically and without allocation."
+documentation = "https://docs.rs/path_no_alloc/"
 edition = "2021"
 homepage = "https://github.com/codeinred/path_no_alloc"
 keywords = ["path", "paths", "filesystem", "fs"]
 license = "MIT"
 name = "path_no_alloc"
 readme = "README.md"
-version = "0.1.1"
+version = "0.1.2"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
