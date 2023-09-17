@@ -124,7 +124,7 @@ pub fn join_in_buff<'a, const N: usize>(
 macro_rules! with_paths {
     // Declaration mode
     {
-        $( $name:ident = $( $path:ident ) / + ),*
+        $( $name:ident = $( $path:tt ) / + ),* $(,)?
     } => {
         $(
             let mut __with_paths_arr: [std::mem::MaybeUninit<u8>; 128] = unsafe { std::mem::MaybeUninit::uninit().assume_init() };
@@ -135,7 +135,7 @@ macro_rules! with_paths {
 
     // Expression mode
     {
-        $( $name:ident = $( $path:ident ) / + ),*
+        $( $name:ident = $( $path:tt ) / + ),* $(,)?
         => $( $statements:stmt );* $(;)?
     } => {
         {

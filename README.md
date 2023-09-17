@@ -34,10 +34,9 @@ after the declaration using the `=>` operator:
 use path_no_alloc::with_paths;
 
 let p1 = "some/dir";
-let p2 = "file.txt";
 
 let file_exists: bool = with_paths! {
-    path = p1 / p2 => path.exists()
+    path = p1 / "file.txt" => path.exists()
 };
 ```
 
@@ -51,13 +50,12 @@ use std::path::{Path, PathBuf};
 
 let p1 = Path::new("hello");
 let p2 = "world".to_string();
-let my_file = "file.txt";
 let some_root = PathBuf::from("some/project/root");
 
 let path_exists = with_paths! {
     path = p1 / p2,
-    another_path = some_root / p1 / my_file,
-    some_third_path = p1 / p2 / some_root / my_file
+    another_path = some_root / p1 / "file.txt",
+    some_third_path = p1 / p2 / some_root / "file.txt"
 
     =>
 
